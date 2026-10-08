@@ -6,6 +6,23 @@
 
 专为 [Mix Space](https://github.com/mx-space) 生态系统设计的现代化个人站点前端。
 
+## 后端兼容性
+
+此分支已适配 **Mix Space Core v14.15.2 / API v3**（2026-10-08 核对）。适配参考 [Cyber](https://github.com/At87668/Cyber/tree/1073379) 的集中响应转换及 Better Auth 会话方案，并补充 Core 14 的原生 WebSocket 协议。保留 Shiro 页面与 Markdown 编辑器，不需要迁移主题配置。
+
+```dotenv
+NEXT_PUBLIC_API_URL=https://你的后端域名/api/v3
+NEXT_PUBLIC_GATEWAY_URL=https://你的后端域名
+```
+
+- 运行和构建需要 Node.js 22+、pnpm 10.12.4；原有以 `/api/v2` 结尾的前端配置会转换为 `/api/v3`。
+- 后端的 `server_url` 也应更新为 `/api/v3`。反向代理需转发 `/ws/web` 的 WebSocket Upgrade，并允许前端来源的带凭据请求；启用响应缓存时需正确处理 `Origin` / `Vary: Origin`。本地开发需额外允许 `http://localhost:2323`。
+- 浏览、分页、分类/页面导航、搜索、评论/回复、订阅、站长登录和实时事件继续使用现有界面。搜索改用 Core 内置搜索；索引由 Core 控制台管理。
+- 新版评论的审核状态和隐藏回复分页已接入。富文本（Lexical）内容可读取其后端提供的 Markdown 文本；请在 Core 控制台编辑，轻管理会阻止用旧编辑器覆盖富文本。
+- 请求层保留 `@mx-space/api-client@1.17.0` 的页面类型及调用方式，别名依赖 `@mx-space/api-client-v3@5.13.0` 只提供官方响应兼容转换，避免全站重写。
+
+验证适配：`pnpm test:core`、`pnpm exec tsc --noEmit`、`pnpm build:ci`。实际账号登录、评论发布及后台写入需在部署后验证；自动化验证不会向生产站点发布内容。
+
 ## :sparkles: 示例站点
 
 以下是一些使用 Shiro 主题的精美站点：

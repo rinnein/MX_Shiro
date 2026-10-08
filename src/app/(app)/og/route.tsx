@@ -6,15 +6,18 @@ import {
   PageController,
   PostController,
 } from '@mx-space/api-client'
-import { fetchAdaptor } from '@mx-space/api-client/dist/adaptors/fetch'
 import { ImageResponse } from 'next/og'
 import type { ImageResponseOptions, NextRequest } from 'next/server'
+import { $fetch } from 'ofetch'
 import type { FC } from 'react'
 import uniqolor from 'uniqolor'
 
 import { API_URL } from '~/constants/env'
 
-const apiClient = createClient(fetchAdaptor)(API_URL, {
+import { createCoreFetchAdapter } from '../../../../packages/fetch/src/core-compat'
+
+const apiClient = createClient(createCoreFetchAdapter($fetch))(API_URL, {
+  getDataFromResponse: (response) => response as any,
   controllers: [
     PostController,
     NoteController,
@@ -132,11 +135,7 @@ export const GET = async (req: NextRequest) => {
           slug: string
         }
 
-    const aggregation = await fetch(apiClient.aggregate.proxy.toString(true), {
-      next: {
-        revalidate: 3600,
-      },
-    }).then((res) => res.json() as Promise<AggregateRoot>)
+    const aggregation = await apiClient.aggregate.getAggregateData()
 
     if (!dataString) {
       return new ImageResponse(<HomeOGImage {...aggregation} />, resOptions)

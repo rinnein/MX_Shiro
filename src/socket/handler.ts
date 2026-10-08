@@ -109,15 +109,8 @@ export const eventHandler = (
 
     case EventTypes.POST_DELETE: {
       refreshContentQueries()
-      const post = data as PostModel
-      if (
-        location.pathname ===
-          routeBuilder(Routes.Post, {
-            category: post.category.slug,
-            slug: post.slug,
-          }) &&
-        getGlobalCurrentPostData()?.id === post.id
-      ) {
+      const id = typeof data === 'string' ? data : data.id
+      if (getGlobalCurrentPostData()?.id === id) {
         router.replace(routeBuilder(Routes.PageDeletd, {}))
         toast.error('文章已删除')
         trackerRealtimeEvent()
@@ -152,14 +145,8 @@ export const eventHandler = (
 
     case EventTypes.NOTE_DELETE: {
       refreshContentQueries()
-      const note = data as NoteModel
-      if (
-        location.pathname ===
-          routeBuilder(Routes.Note, {
-            id: note.id,
-          }) &&
-        getCurrentNoteData()?.data.id === note.id
-      ) {
+      const id = typeof data === 'string' ? data : data.id
+      if (getCurrentNoteData()?.data.id === id) {
         router.replace(routeBuilder(Routes.PageDeletd, {}))
         toast.error('手记已删除')
         trackerRealtimeEvent()
@@ -252,8 +239,9 @@ export const eventHandler = (
     }
 
     case EventTypes.COMMENT_DELETE: {
-      if (typeof data?.id === 'string') {
-        hideDeletedComment(queryClient, data.id)
+      const id = typeof data === 'string' ? data : data?.id
+      if (typeof id === 'string') {
+        hideDeletedComment(queryClient, id)
       }
       break
     }

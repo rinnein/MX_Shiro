@@ -8,6 +8,8 @@ import { SocketConnectedEvent, SocketDisconnectedEvent } from '~/events'
 import { isDev, isServerSide } from '~/lib/env'
 import type { EventTypes, SocketEmitEnum } from '~/types/events'
 
+import { normalizeCoreModel } from '../../packages/fetch/src/core-compat'
+import { getCoreSocketUrl } from '../../packages/fetch/src/endpoint'
 import { eventHandler } from './handler'
 import { SharedWorkerPolyfill as SharedWorker } from './worker-polyfill'
 
@@ -83,27 +85,26 @@ class SocketWorker {
           if (typeof typedPayload !== 'string') {
             return this.handleEvent(
               typedPayload.type,
-              camelcaseKeys(typedPayload.data),
+              normalizeCoreModel(camelcaseKeys(typedPayload.data)),
             )
           }
           const { data, type } = JSON.parse(typedPayload) as {
             data: any
             type: EventTypes
           }
-          this.handleEvent(type, camelcaseKeys(data))
+          this.handleEvent(type, normalizeCoreModel(camelcaseKeys(data)))
         }
       }
     }
   }
 
   prepare(worker: SharedWorker) {
-    const gatewayUrlWithoutTrailingSlash = GATEWAY_URL.replace(/\/$/, '')
     this.bindMessageHandler(worker)
     worker.postMessage({
       type: 'config',
 
       payload: {
-        url: `${gatewayUrlWithoutTrailingSlash}/web`,
+        url: getCoreSocketUrl(GATEWAY_URL, window.location.origin),
         socket_session_id: getSocketWebSessionId(),
       },
     })

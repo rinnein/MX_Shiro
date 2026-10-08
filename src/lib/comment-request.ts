@@ -20,7 +20,7 @@ export const submitComment = (
   const { refId, text, isReply, isOwner, isReader, isWhispers } = submission
   const isGuest = !isOwner && !isReader
 
-  // Core v11 separates guest and authenticated submissions. Owner comments
+  // Core v11–v14 separate guest and authenticated submissions. Owner comments
   // use the reader route; only owner replies have a dedicated admin route.
   const path = isReply
     ? isOwner
@@ -52,5 +52,12 @@ export const submitComment = (
     data.isWhispers = isWhispers
   }
 
-  return client.proxy.comments(path)(refId).post<CommentModel>({ data })
+  return client.proxy.comments(path)(refId).post<
+    CommentModel & {
+      moderation?: {
+        status: 'published' | 'pending' | 'rejected'
+        receipt?: string
+      }
+    }
+  >({ data })
 }

@@ -4,7 +4,8 @@ import type { FetchError } from 'ofetch'
 export const getErrorMessageFromRequestError = (error: RequestError) => {
   if (!(error instanceof RequestError)) return (error as Error).message
   const fetchError = error.raw as FetchError
-  const messagesOrMessage = fetchError.response?._data?.message
+  const body = fetchError.response?._data
+  const messagesOrMessage = body?.error?.message ?? body?.message
   const bizMessage =
     typeof messagesOrMessage === 'string'
       ? messagesOrMessage

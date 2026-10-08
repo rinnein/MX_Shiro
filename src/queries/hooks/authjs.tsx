@@ -8,6 +8,7 @@ import { useIsMobile } from '~/atoms/hooks'
 import { GitHubBrandIcon } from '~/components/icons/platform/GitHubBrandIcon'
 import { MotionButtonBase } from '~/components/ui/button'
 import { useModalStack } from '~/components/ui/modal'
+import { useIsClient } from '~/hooks/common/use-is-client'
 import type { AuthSocialProviders } from '~/lib/authjs'
 import { authClient } from '~/lib/authjs'
 import { apiClient } from '~/lib/request'
@@ -49,10 +50,12 @@ export const useOauthLoginModal = () => {
 }
 
 export const AuthProvidersRender: FC = () => {
+  const isClient = useIsClient()
   const providers = useAuthProviders()
   const [authProcessingLockSet, setAuthProcessingLockSet] = useState(
     () => new Set<AuthSocialProviders>(),
   )
+  if (!isClient) return null
   return (
     <>
       {providers && (

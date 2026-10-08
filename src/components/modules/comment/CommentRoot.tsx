@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 
 import { LazyLoad } from '~/components/common/Lazyload'
+import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
 
 import { CommentBoxRoot } from './CommentBox/Root'
 import { Comments } from './Comments'
@@ -20,8 +21,13 @@ export const CommentAreaRoot: FC<
   // if (isCN) return <NotSupport />
 
   const { allowComment, refId } = props
+  const globallyDisabled = useAggregationSelector(
+    (data) =>
+      (data as typeof data & { commentOptions?: { disableComment?: boolean } })
+        .commentOptions?.disableComment,
+  )
   // 兜下后端的数据，默认开
-  if (!allowComment && allowComment !== undefined) {
+  if (globallyDisabled || (!allowComment && allowComment !== undefined)) {
     return (
       <p className="mt-[7.1rem] text-center text-xl font-medium">评论已关闭</p>
     )

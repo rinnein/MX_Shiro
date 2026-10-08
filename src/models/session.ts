@@ -7,6 +7,7 @@ export interface SessionReader {
   image: string
   emailVerified: null
   isOwner: boolean
+  role?: string
   scope: string
   tokenType: string
   providerAccountId: string

@@ -5,7 +5,7 @@ import createClient from '@mx-space/api-client'
 
 import { submitComment } from './comment-request.ts'
 
-const apiUrl = 'https://api-blog.example.com/api/v2'
+const apiUrl = 'https://api-blog.example.com/api/v3'
 const refId = '6ab930f7e99146725880ebb3'
 const text = '评论接口回归测试'
 
@@ -55,7 +55,7 @@ const cases = [
 ]
 
 for (const [name, identity, route, data] of cases) {
-  test(`submits ${name} to the Core v11 route with the correct body`, async () => {
+  test(`submits ${name} to the Core v14 route with the correct body`, async () => {
     const requests = []
     const client = createRecordingClient(async (url, options) => {
       requests.push({ url, options })

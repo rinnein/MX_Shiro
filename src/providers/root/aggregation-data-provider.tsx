@@ -6,7 +6,7 @@ import { selectAtom } from 'jotai/utils'
 import type { FC, PropsWithChildren } from 'react'
 import { useCallback, useEffect, useRef } from 'react'
 
-import { fetchAppUrl, setWebUrl } from '~/atoms'
+import { setWebUrl } from '~/atoms'
 import { login } from '~/atoms/owner'
 import { useBeforeMounted } from '~/hooks/common/use-before-mounted'
 import { jotaiStore } from '~/lib/store'
@@ -48,14 +48,7 @@ export const AggregationProvider: FC<
     if (!aggregationData?.user) return
     callOnceRef.current = true
 
-    login().then((logged) => {
-      if (logged) {
-        // FIXME
-        setTimeout(() => {
-          fetchAppUrl()
-        }, 1000)
-      }
-    })
+    void login().catch(() => {})
   }, [aggregationData?.user])
 
   return children

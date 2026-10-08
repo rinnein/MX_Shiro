@@ -5,13 +5,14 @@
   "packageManager": "pnpm@10.12.4",
   "license": "AGPL-3.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "analyze": "cross-env NODE_ENV=production ANALYZE=true BUNDLE_ANALYZE=browser next build",
     "prebuild": "rimraf .next || exit 0",
     "build": "cross-env NODE_ENV=production NODE_OPTIONS=--max_old_space_size=4096 next build",
     "build:ci": "cross-env NODE_ENV=production NODE_OPTIONS=--max_old_space_size=4096 NEXT_TELEMETRY_DISABLED=1 CI=true next build",
+    "test:core": "node --experimental-strip-types --test packages/fetch/src/core-compat.test.mjs src/lib/owner-auth.test.mjs src/lib/comment-request.test.mjs src/socket/io.worker.test.mjs src/socket/rooms.test.mjs",
     "dev": "cross-env NODE_ENV=development next dev -p 2323",
     "dev:turbo": "cross-env NODE_ENV=development next dev -p 2323 --turbo",
     "lint": "eslint --fix",
@@ -26,6 +27,8 @@
     "@excalidraw/excalidraw": "0.17.6",
     "@floating-ui/react-dom": "2.1.4",
     "@mx-space/api-client": "1.17.0",
+    "@mx-space/api-client-v3": "npm:@mx-space/api-client@5.13.0",
+    "@mx-space/ws-client": "0.1.0",
     "@openpanel/nextjs": "1.0.8",
     "@radix-ui/react-avatar": "1.1.10",
     "@radix-ui/react-dialog": "1.1.14",
@@ -100,7 +103,6 @@
     "remove-markdown": "0.6.2",
     "rss": "1.2.2",
     "server-only": "^0.0.1",
-    "socket.io-client": "4.8.1",
     "sonner": "2.0.5",
     "tailwind-merge": "3.3.1",
     "unidata.js": "0.8.0",

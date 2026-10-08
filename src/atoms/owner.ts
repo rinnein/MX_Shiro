@@ -1,12 +1,12 @@
 import { atom } from 'jotai'
 
-import { getToken, removeToken, setToken } from '~/lib/cookie'
+import { removeToken, setToken } from '~/lib/cookie'
+import { checkOwner, signInOwner } from '~/lib/owner-auth'
 import { apiClient } from '~/lib/request'
 import { jotaiStore } from '~/lib/store'
 import { toast } from '~/lib/toast'
 import { aggregationDataAtom } from '~/providers/root/aggregation-data-provider'
 
-import { refreshToken } from './hooks/owner'
 import { fetchAppUrl } from './url'
 
 export const ownerAtom = atom((get) => {
@@ -16,46 +16,28 @@ export const isLoggedAtom = atom(false)
 
 export const login = async (username?: string, password?: string) => {
   if (username && password) {
-    const user = await apiClient.user.login(username, password).catch((err) => {
-      console.error(err)
-      toast.error('再试试哦')
-      throw err
-    })
-    if (user) {
-      const { token } = user
-      setToken(token)
-      jotaiStore.set(isLoggedAtom, true)
-
-      await fetchAppUrl()
-      toast.success(`欢迎回来，${jotaiStore.get(ownerAtom)?.name}`)
+    const session = await signInOwner(apiClient, username, password)
+    // Better Auth's bearer plugin accepts this session token. Retain it for
+    // server rendering when the API cookie belongs to a different subdomain.
+    setToken(session.token)
+    const owner = await checkOwner(apiClient)
+    jotaiStore.set(isLoggedAtom, owner)
+    if (!owner) {
+      removeToken()
+      throw new Error('该账号不是站长账号')
     }
-
+    await fetchAppUrl()
+    toast.success(`欢迎回来，${jotaiStore.get(ownerAtom)?.name}`)
     return true
   }
 
-  const token = getToken()
-  if (!token) {
-    return
-  }
-  // const outdateToast = () => toast.warn('登录身份过期了，再登录一下吧！')
-  const validated = await apiClient.user
-    .checkTokenValid(token)
-    .then((res) => !!res.ok)
-
-    .catch(() => {
-      removeToken()
-      // outdateToast()
-      return false
-    })
-
-  if (!validated) {
-    // outdateToast()
+  const owner = await checkOwner(apiClient)
+  jotaiStore.set(isLoggedAtom, owner)
+  if (!owner) {
     removeToken()
-    return
+    return false
   }
-
-  await refreshToken()
-
+  await fetchAppUrl()
   return true
 }
 

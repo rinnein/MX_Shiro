@@ -5,14 +5,17 @@ import { useEffect } from 'react'
 
 import { fetchAppUrl, isLoggedAtom } from '~/atoms'
 import { setSessionReader } from '~/atoms/hooks/reader'
-import type { authClient } from '~/lib/authjs'
+import { getToken } from '~/lib/cookie'
+import { checkOwner } from '~/lib/owner-auth'
 import { apiClient } from '~/lib/request'
 import { jotaiStore } from '~/lib/store'
+import type { SessionReader } from '~/models/session'
 
-type AdapterUser = typeof authClient.$Infer.Session
+type AdapterUser = SessionReader | null
 export const AuthSessionProvider: Component = ({ children }) => {
   const { data: session } = useQuery({
     queryKey: ['session'],
+    meta: { persist: false },
     refetchOnMount: 'always',
     queryFn: () =>
       apiClient.proxy.auth.session.get<AdapterUser>({
@@ -23,12 +26,24 @@ export const AuthSessionProvider: Component = ({ children }) => {
   })
 
   useEffect(() => {
-    if (!session) return
-    const transformedData = simpleCamelcaseKeys(session)
-    setSessionReader(transformedData)
-    if (transformedData.isOwner) {
-      jotaiStore.set(isLoggedAtom, true)
-      fetchAppUrl()
+    if (session === undefined) return
+    const reader = session ? simpleCamelcaseKeys(session) : null
+    setSessionReader(reader)
+    // Core v14 identifies the owner with role, as in Cyber's session provider.
+    const owner = reader?.role === 'owner'
+    if (owner || !getToken()) jotaiStore.set(isLoggedAtom, owner)
+    if (owner) void fetchAppUrl()
+    // API tokens have no reader session, but can still grant owner access.
+    if (!owner && getToken()) {
+      let active = true
+      void checkOwner(apiClient)
+        .then((ok) => {
+          if (active) jotaiStore.set(isLoggedAtom, ok)
+        })
+        .catch(() => {})
+      return () => {
+        active = false
+      }
     }
   }, [session])
   return children

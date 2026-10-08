@@ -10,6 +10,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -22,7 +23,11 @@ import {
 } from '~/components/ui/user/UserAuthStrategyIcon'
 import { softSpringPreset } from '~/constants/spring'
 import type { AuthSocialProviders } from '~/lib/authjs'
+import { filterDeletedComments } from '~/lib/comment-visibility'
+import { apiClient } from '~/lib/request'
+import { getErrorMessageFromRequestError } from '~/lib/request.shared'
 import { jotaiStore } from '~/lib/store'
+import { toast } from '~/lib/toast'
 
 import styles from './Comment.module.css'
 import { CommentMarkdown } from './CommentMarkdown'
@@ -31,7 +36,10 @@ import { useCommentReader } from './CommentProvider'
 import { CommentReplyButton } from './CommentReplyButton'
 
 export const Comment: Component<{
-  comment: CommentModel & { new?: boolean }
+  comment: CommentModel & {
+    new?: boolean
+    replyWindow?: { hasHidden: boolean; nextCursor?: string }
+  }
 }> = memo(function Comment(props) {
   const { comment, className } = props
   const elAtom = useMemo(() => atom<HTMLDivElement | null>(null), [])
@@ -197,16 +205,93 @@ export const Comment: Component<{
 
         <CommentBoxHolderProvider />
       </CommentHolderContext.Provider>
-      {comment.children && comment.children.length > 0 && (
-        <ul className="my-2 space-y-2">
-          {comment.children.map((child) => (
-            <Comment key={child.id} comment={child} className="ml-9" />
-          ))}
-        </ul>
+      {!comment.replyWindow?.hasHidden &&
+        comment.children &&
+        comment.children.length > 0 && (
+          <ul className="my-2 space-y-2">
+            {comment.children.map((child) => (
+              <Comment key={child.id} comment={child} className="ml-9" />
+            ))}
+          </ul>
+        )}
+      {comment.replyWindow?.hasHidden && (
+        <MoreReplies
+          key={`${cid}:${comment.replyWindow.nextCursor}`}
+          id={cid}
+          cursor={comment.replyWindow.nextCursor}
+          initialReplies={comment.children || []}
+        />
       )}
     </>
   )
 })
+
+const MoreReplies = ({
+  id,
+  cursor,
+  initialReplies,
+}: {
+  id: string
+  cursor?: string
+  initialReplies: CommentModel[]
+}) => {
+  const [replies, setReplies] = useState<CommentModel[]>([])
+  const [nextCursor, setNextCursor] = useState(cursor)
+  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const loadMore = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const result = await apiClient.proxy.comments.thread(id).get<{
+        replies: CommentModel[]
+        nextCursor?: string
+        done: boolean
+      }>({ params: { cursor: nextCursor, size: 20 } })
+      setReplies((previous) => {
+        const known = new Set([
+          ...initialReplies.map((reply) => reply.id),
+          ...previous.map((reply) => reply.id),
+        ])
+        return [
+          ...previous,
+          ...filterDeletedComments(result.replies).filter(
+            (reply) => !known.has(reply.id),
+          ),
+        ]
+      })
+      setNextCursor(result.nextCursor)
+      setDone(
+        result.done || !result.nextCursor || result.nextCursor === nextCursor,
+      )
+    } catch (error) {
+      toast.error(getErrorMessageFromRequestError(error as any))
+    } finally {
+      setLoading(false)
+    }
+  }
+  return (
+    <>
+      <ul className="my-2 space-y-2">
+        {[...initialReplies, ...replies]
+          .sort((a, b) => a.created.localeCompare(b.created))
+          .map((reply) => (
+            <Comment key={reply.id} comment={reply} className="ml-9" />
+          ))}
+      </ul>
+      {!done && (
+        <button
+          type="button"
+          className="ml-9 text-sm text-accent"
+          disabled={loading}
+          onClick={loadMore}
+        >
+          {loading ? '加载中…' : '加载更多回复'}
+        </button>
+      )}
+    </>
+  )
+}
 
 const CommentHolderContext = createContext(atom(null as null | HTMLDivElement))
 

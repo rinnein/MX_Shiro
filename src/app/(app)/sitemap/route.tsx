@@ -8,10 +8,10 @@ export const GET = async () => {
 
   const { data } = await queryClient.fetchQuery({
     queryKey: ['sitemap'],
-    queryFn: async () => {
-      const path = apiClient.aggregate.proxy.sitemap.toString(true)
-      return fetch(path).then((res) => res.json())
-    },
+    queryFn: () =>
+      apiClient.aggregate.proxy.sitemap.get<{
+        data: { url: string; publishedAt?: string }[]
+      }>(),
   })
 
   const xml = `
@@ -20,7 +20,7 @@ export const GET = async () => {
     .map(
       (item: any) => `<url>
   <loc>${item.url}</loc>
-${!!item.published_at && `<lastmod>${item.published_at || 'N/A'}</lastmod>`}
+${!!item.publishedAt && `<lastmod>${item.publishedAt || 'N/A'}</lastmod>`}
   <changefreq>daily</changefreq>
   </url>`,
     )

@@ -168,13 +168,25 @@ export const useSendComment = () => {
           })
       }
 
-      return wrappedCompletedCallback(comment)
+      return comment.moderation?.status &&
+        comment.moderation.status !== 'published'
+        ? comment
+        : wrappedCompletedCallback(comment)
     },
     mutationKey: [commentRefId, 'comment'],
     onError(error: RequestError) {
       toast.error(getErrorMessageFromRequestError(error))
     },
     onSuccess(data) {
+      if (data.moderation?.status && data.moderation.status !== 'published') {
+        toast.info(
+          data.moderation.status === 'pending'
+            ? '评论已提交，等待审核'
+            : '评论未通过审核',
+        )
+        if (data.moderation.status === 'pending') jotaiStore.set(textAtom, '')
+        return
+      }
       afterSubmit?.()
 
       const toastCopy = isLogged

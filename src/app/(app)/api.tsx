@@ -1,5 +1,5 @@
 import type { AggregateRoot } from '@mx-space/api-client'
-import { simpleCamelcaseKeys } from '@mx-space/api-client'
+import createClient, { AggregateController } from '@mx-space/api-client'
 import { $fetch } from 'ofetch'
 import { cache } from 'react'
 
@@ -8,28 +8,27 @@ import { attachServerFetch } from '~/lib/attach-fetch'
 import { getQueryClient } from '~/lib/query-client.server'
 import { apiClient } from '~/lib/request'
 
+import { createCoreFetchAdapter } from '../../../packages/fetch/src/core-compat'
+
 const cacheTime = appStaticConfig.cache.enabled
   ? appStaticConfig.cache.ttl.aggregation
   : 1
 export const fetchAggregationData = cache(async () => {
   attachServerFetch()
   const queryClient = getQueryClient()
+  const client = createClient(
+    createCoreFetchAdapter(
+      $fetch.create({
+        next: { revalidate: cacheTime, tags: ['aggregate', 'shiro'] },
+      }),
+    ),
+  )(apiClient.proxy.toString(true), {
+    controllers: [AggregateController],
+    getDataFromResponse: (response) => response as any,
+  })
   const fetcher = async () =>
-    (await $fetch<
-      AggregateRoot & {
-        theme: AppThemeConfig
-      }
-    >(apiClient.aggregate.proxy.toString(true), {
-      params: {
-        theme: 'shiro',
-      },
-      next: {
-        revalidate: cacheTime,
-        tags: ['aggregate', 'shiro'],
-      },
-    }).then(simpleCamelcaseKeys)) as AggregateRoot & {
-      theme: AppThemeConfig
-    }
+    (await client.aggregate.getAggregateData('shiro'))
+      .$serialized as AggregateRoot & { theme: AppThemeConfig }
 
   return queryClient.fetchQuery({
     queryKey: ['aggregate', 'shiro'],

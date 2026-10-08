@@ -7,6 +7,7 @@ import { useSessionReader } from '~/atoms/hooks/reader'
 import { ErrorBoundary } from '~/components/common/ErrorBoundary'
 import { AutoResizeHeight } from '~/components/modules/shared/AutoResizeHeight'
 import { clsxm } from '~/lib/helper'
+import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
 
 import type { CommentBaseProps } from '../types'
 import { CommentBoxAuthedInput } from './AuthedInput'
@@ -24,6 +25,15 @@ export const CommentBoxRoot: Component<CommentBaseProps> = (props) => {
   const isLogged = useIsLogged()
 
   const sessionReader = useSessionReader()
+  const allowGuest =
+    useAggregationSelector(
+      (data) =>
+        (
+          data as typeof data & {
+            commentOptions?: { allowGuestComment?: boolean }
+          }
+        ).commentOptions?.allowGuestComment,
+    ) !== false
 
   useEffect(() => {
     if (sessionReader) {
@@ -42,12 +52,12 @@ export const CommentBoxRoot: Component<CommentBaseProps> = (props) => {
           className={clsxm('group relative w-full min-w-0', className)}
           data-hide-print
         >
-          <SwitchCommentMode />
+          {allowGuest && <SwitchCommentMode />}
 
           <div className="relative w-full">
             {isLogged ? (
               <CommentBoxLegacy />
-            ) : mode === CommentBoxMode.legacy ? (
+            ) : allowGuest && mode === CommentBoxMode.legacy ? (
               <CommentBoxLegacy />
             ) : (
               <CommentBoxWithAuth />

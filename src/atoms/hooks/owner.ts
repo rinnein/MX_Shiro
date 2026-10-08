@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useAtomValue } from 'jotai'
 
-import { getToken, setToken } from '~/lib/cookie'
+import { removeToken } from '~/lib/cookie'
+import { checkOwner } from '~/lib/owner-auth'
 import { apiClient } from '~/lib/request'
 import { jotaiStore } from '~/lib/store'
 
@@ -18,14 +19,14 @@ export const useRefreshToken = () => {
   })
 }
 
+// Better Auth refreshes sessions itself; the removed PUT /master/login must
+// not be called when opening the site or refreshing the admin session.
 export const refreshToken = async () => {
-  const token = getToken()
-  if (!token) return
-  await apiClient.user.proxy.login.put<{ token: string }>().then((res) => {
-    jotaiStore.set(isLoggedAtom, true)
-
-    setToken(res.token)
-  })
-
+  const owner = await checkOwner(apiClient)
+  jotaiStore.set(isLoggedAtom, owner)
+  if (!owner) {
+    removeToken()
+    return
+  }
   await fetchAppUrl()
 }

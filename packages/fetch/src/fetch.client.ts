@@ -1,6 +1,5 @@
 import 'client-only'
 
-import { nanoid } from 'nanoid'
 import { createFetch } from 'ofetch'
 
 import PKG from '../../../package.json'
@@ -8,8 +7,6 @@ import { createApiClient, createFetchAdapter, getToken } from './shared'
 
 const isDev = process.env.NODE_ENV === 'development'
 const isServerSide = typeof window === 'undefined'
-const uuidStorageKey = 'x-uuid'
-const uuid = nanoid()
 
 const globalConfigureHeader = {} as any
 const globalConfigureSearchParams = {} as any
@@ -39,9 +36,6 @@ export const $fetch = createFetch({
       if (token) {
         headers.Authorization = `bearer ${token}`
       }
-
-      headers['X-Session-Uuid'] =
-        globalThis?.sessionStorage?.getItem(uuidStorageKey) ?? uuid
 
       context.options.params ??= {}
       Object.assign(context.options.params, globalConfigureSearchParams)

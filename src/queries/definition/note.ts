@@ -105,6 +105,12 @@ export const useUpdateNote = () => {
   const resetAutoSaver = useResetAutoSaverData()
   return useMutation({
     mutationFn: (data: NoteDto) => {
+      if (
+        (data as typeof data & { contentFormat?: string }).contentFormat ===
+        'lexical'
+      ) {
+        throw new Error('请在 Core 控制台编辑这篇富文本内容')
+      }
       const { id } = data
       const readonlyKeys = [
         'id',

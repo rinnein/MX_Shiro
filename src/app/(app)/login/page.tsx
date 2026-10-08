@@ -5,23 +5,34 @@ import { useState } from 'react'
 
 import { StyledButton } from '~/components/ui/button'
 import { Input } from '~/components/ui/input/Input'
+import { getErrorMessageFromRequestError } from '~/lib/request.shared'
 import { Routes } from '~/lib/route-builder'
+import { toast } from '~/lib/toast'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLogin = async (e: any) => {
     e.preventDefault()
-    const { login } = await import('~/atoms/owner')
-    await login(username, password)
-
-    const redirectPath = new URLSearchParams(location.search).get('redirect')
-    if (redirectPath) {
-      router.push(decodeURIComponent(redirectPath))
-    } else {
-      router.push(Routes.Home)
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      const { login } = await import('~/atoms/owner')
+      await login(username, password)
+      const redirectPath = new URLSearchParams(location.search).get('redirect')
+      router.push(
+        redirectPath?.startsWith('/') && !redirectPath.startsWith('//')
+          ? redirectPath
+          : Routes.Home,
+      )
+      router.refresh()
+    } catch (error) {
+      toast.error(getErrorMessageFromRequestError(error as any))
+    } finally {
+      setIsSubmitting(false)
     }
   }
   return (
@@ -42,7 +53,10 @@ export default function LoginPage() {
         />
 
         <div className="center flex">
-          <StyledButton disabled={!username || !password} onClick={handleLogin}>
+          <StyledButton
+            type="submit"
+            disabled={isSubmitting || !username || !password}
+          >
             Login
           </StyledButton>
         </div>

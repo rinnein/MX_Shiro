@@ -17,6 +17,11 @@ export const $fetch = createFetch({
       const cookie = cookies()
 
       const token = cookie.get(TokenKey)?.value
+      const sessionCookies = cookie
+        .getAll()
+        .filter(({ name }) => /^(?:__Secure-)?better-auth\./.test(name))
+        .map(({ name, value }) => `${name}=${value}`)
+        .join('; ')
 
       // eslint-disable-next-line prefer-destructuring
       let headers: any = context.options.headers
@@ -25,6 +30,7 @@ export const $fetch = createFetch({
       } else {
         headers = {}
       }
+      if (sessionCookies) headers.cookie = sessionCookies
       if (token) {
         headers['Authorization'] = `bearer ${token}`
       }
@@ -35,7 +41,7 @@ export const $fetch = createFetch({
         context.options.params.r = nanoid()
       }
 
-      if (context.options.params.token || token) {
+      if (context.options.params.token || token || sessionCookies) {
         context.options.cache = 'no-store'
       }
       if (isDev) {

@@ -48,6 +48,7 @@ declare module '@tanstack/react-query' {
 
 const persistOptions: Omit<PersistQueryClientOptions, 'queryClient'> = {
   persister: asyncStoragePersister,
+  buster: 'core-v14-api-v3',
   maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
   dehydrateOptions: {
     shouldDehydrateQuery: (query) => {

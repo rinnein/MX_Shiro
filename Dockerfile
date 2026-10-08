@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 RUN npm install -g --arch=x64 --platform=linux sharp
 
@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.12.4
 RUN pnpm install
 
 FROM base AS builder
@@ -20,7 +20,7 @@ RUN apk update && apk add --no-cache git
 
 WORKDIR /app
 COPY --from=deps /app/ .
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.12.4
 
 ENV NODE_ENV production
 ARG BASE_URL
@@ -31,7 +31,7 @@ ARG WEBHOOK_SECRET
 ARG TMDB_API_KEY
 ARG GH_TOKEN
 ENV BASE_URL=${BASE_URL}
-ENV NEXT_PUBLIC_API_URL=${BASE_URL}/api/v2
+ENV NEXT_PUBLIC_API_URL=${BASE_URL}/api/v3
 ENV NEXT_PUBLIC_GATEWAY_URL=${BASE_URL}
 
 ENV S3_ACCESS_KEY=${S3_ACCESS_KEY}

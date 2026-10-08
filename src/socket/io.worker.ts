@@ -1,158 +1,120 @@
-import type { Socket } from 'socket.io-client'
-import { io } from 'socket.io-client'
+import type { WsClient } from '@mx-space/ws-client'
+import { createWsClient } from '@mx-space/ws-client'
 
-import { SocketEmitEnum } from '~/types/events'
+import { EventTypes, SocketEmitEnum } from '~/types/events'
 
 /// <reference lib="webworker" />
 
-let ws: Socket | null = null
+let ws: WsClient | null = null
+let config: { url: string; socket_session_id: string } | null = null
+let ready = false
 const roomMembers = new Map<MessagePort | Window, Set<string>>()
-const waitingEmitQueue: any[] = []
+const ports: MessagePort[] = []
 
-const hasRoomMember = (roomName: string) =>
-  [...roomMembers.values()].some((rooms) => rooms.has(roomName))
+const hasRoomMember = (room: string) =>
+  [...roomMembers.values()].some((rooms) => rooms.has(room))
 
-function setupIo(config: { url: string; socket_session_id: string }) {
-  if (ws) return
-  // 使用 socket.io
-  console.info('Connecting to io, url:', config.url)
-
-  ws = io(config.url, {
-    timeout: 10000,
-    reconnectionDelay: 3000,
-    autoConnect: false,
-    reconnectionAttempts: Infinity,
-    transports: ['websocket'],
-
-    query: {
-      socket_session_id: config.socket_session_id,
-    },
-  })
-  if (!ws) return
-
-  ws.on('disconnect', () => {
-    boardcast({
-      type: 'disconnect',
-    })
-  })
-
-  /**
-   * @param {any} payload
-   */
-  ws.on('message', (payload) => {
-    console.info('ws', payload)
-
-    boardcast({
-      type: 'message',
-      payload,
-    })
-  })
-
-  ws.on('connect', () => {
-    console.info('Connected to ws.io server from SharedWorker')
-
-    if (waitingEmitQueue.length > 0) {
-      waitingEmitQueue.forEach((payload) => {
-        if (!ws) return
-        ws.emit('message', payload)
-      })
-      waitingEmitQueue.length = 0
-    }
-    // Socket.IO room membership is lost on reconnect. Restore all rooms before
-    // notifying tabs that their connection is ready again.
-    for (const roomName of new Set(
-      [...roomMembers.values()].flatMap((rooms) => [...rooms]),
-    )) {
-      ws?.emit('message', { type: SocketEmitEnum.Join, payload: { roomName } })
-    }
-    boardcast({
-      type: 'connect',
-      // @ts-expect-error
-      payload: ws.id,
-    })
-  })
-
-  ws.open()
-  boardcast({
-    type: 'sid',
-    payload: ws.id,
-  })
+const broadcast = (message: unknown) => {
+  for (const port of ports) port.postMessage(message)
 }
 
-const ports = [] as MessagePort[]
+function setupIo(nextConfig: NonNullable<typeof config>) {
+  if (ws) return
+  config = nextConfig
+  ws = createWsClient({
+    url: config.url,
+    query: { socket_session_id: config.socket_session_id },
+    backoff: { baseMs: 3000, maxMs: 30000 },
+  })
+  ws.on('$state', (state) => {
+    if (state !== 'open') {
+      ready = false
+      broadcast({ type: 'disconnect' })
+    }
+  })
+  // Wait for Core's greeting: the HTTP upgrade completes before async session
+  // initialization, so joining rooms on the raw `open` event races the server.
+  ws.on('gateway.connect', () => {
+    ready = true
+    ws?.send('session.update', { sessionId: config!.socket_session_id })
+    for (const room of new Set(
+      [...roomMembers.values()].flatMap((rooms) => [...rooms]),
+    )) {
+      ws?.send('room.join', { room })
+    }
+    broadcast({ type: 'connect' })
+  })
+  for (const event of [
+    ...Object.values(EventTypes),
+    'fn#media-update',
+    'fn#ps-update',
+    'fn#shiro#update',
+  ]) {
+    const wireEvent = event.startsWith('fn#')
+      ? event.replace('fn#', 'fn.')
+      : event.toLowerCase().replace('_', '.')
+    ws.on(wireEvent, (data) =>
+      broadcast({ type: 'message', payload: { type: event, data } }),
+    )
+  }
+}
 
-const preparePort = (port: MessagePort | Window) => {
+function preparePort(port: MessagePort | Window) {
   port.onmessage = (event) => {
     const { type, payload } = event.data
-    console.info('get message from main', event.data)
-
     switch (type) {
       case 'config': {
         setupIo(payload)
         break
       }
       case 'emit': {
-        const roomName = payload?.payload?.roomName
+        const room = payload?.payload?.roomName
         if (
           (payload?.type === SocketEmitEnum.Join ||
             payload?.type === SocketEmitEnum.Leave) &&
-          typeof roomName === 'string'
+          typeof room === 'string'
         ) {
-          const wasJoined = hasRoomMember(roomName)
+          const wasJoined = hasRoomMember(room)
           const rooms = roomMembers.get(port) || new Set<string>()
-          if (payload.type === SocketEmitEnum.Join) rooms.add(roomName)
-          else rooms.delete(roomName)
+          if (payload.type === SocketEmitEnum.Join) rooms.add(room)
+          else rooms.delete(room)
           if (rooms.size > 0) roomMembers.set(port, rooms)
           else roomMembers.delete(port)
-          const isJoined = hasRoomMember(roomName)
-          if (ws?.connected && wasJoined !== isJoined) {
-            ws.emit('message', payload)
-          }
-        } else if (ws) {
-          if (ws.connected) ws.emit('message', payload)
-          else waitingEmitQueue.push(payload)
+          const isJoined = hasRoomMember(room)
+          if (ready && wasJoined !== isJoined)
+            ws?.send(isJoined ? 'room.join' : 'room.leave', { room })
+        } else if (payload?.type === SocketEmitEnum.UpdateSid && config) {
+          config.socket_session_id = payload.payload.sessionId
+          if (ready)
+            ws?.send('session.update', { sessionId: config.socket_session_id })
         }
         break
       }
       case 'reconnect': {
-        if (ws) ws.open()
+        // The SDK owns reconnect/backoff and restores rooms after the greeting.
+        if (ws?.state === 'closed' && config) {
+          ws = null
+          setupIo(config)
+        }
         break
       }
       case 'init': {
         port.postMessage({ type: 'ping' })
-
-        if (ws) {
-          if (ws.connected)
-            port.postMessage({ type: 'connect', payload: ws.id })
-          port.postMessage({ type: 'sid', payload: ws.id })
-        }
+        if (ready) port.postMessage({ type: 'connect' })
         break
-      }
-      default: {
-        console.info('Unknown message type:', type)
       }
     }
   }
 }
 
-self.addEventListener('connect', (ev: any) => {
-  const event = ev as MessageEvent
-
-  const port = event.ports[0]
-
+self.addEventListener('connect', (event: any) => {
+  const port = (event as MessageEvent).ports[0]
   ports.push(port)
   preparePort(port)
   port.start()
 })
 
 if (!('SharedWorkerGlobalScope' in self)) {
-  ports.push(self as any as MessagePort)
+  ports.push(self as unknown as MessagePort)
   preparePort(self)
-}
-
-function boardcast(payload: any) {
-  console.info('[ws] boardcast', payload)
-  ports.forEach((port) => {
-    port.postMessage(payload)
-  })
 }

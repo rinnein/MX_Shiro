@@ -1,6 +1,6 @@
 import type { NoteModel } from '@mx-space/api-client'
 
-export const enum EventTypes {
+export enum EventTypes {
   GATEWAY_CONNECT = 'GATEWAY_CONNECT',
   GATEWAY_DISCONNECT = 'GATEWAY_DISCONNECT',
 

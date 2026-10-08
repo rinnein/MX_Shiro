@@ -55,7 +55,7 @@ const getSiteStats = async (): Promise<Stats> => {
       countPublications((page) => apiClient.note.getList(page, PAGE_SIZE)),
       apiClient.shorthand.getAll(),
       apiClient.proxy.aggregate.count_site_words.get<{
-        data: { length: number }
+        count: number
       }>(),
     ])
 
@@ -87,7 +87,7 @@ const getSiteStats = async (): Promise<Stats> => {
       ? postCharacters + noteCharacters + thoughtCharacters
       : null
   const fallbackCharacters =
-    wordResult.status === 'fulfilled' ? wordResult.value.data?.length : null
+    wordResult.status === 'fulfilled' ? wordResult.value.count : null
 
   if (!stat && !posts && !notes && !thoughts && fallbackCharacters == null) {
     throw new Error('All site statistics sources are unavailable')
