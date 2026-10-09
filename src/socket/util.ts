@@ -1,18 +1,18 @@
-import type { BusinessEvents } from '@mx-space/webhook'
+import type { EventTypes } from '~/types/events'
 
 export const buildSocketEventType = (type: string) =>
   `ws_event:${type}` as const
 
 export class WsEvent extends Event {
   constructor(
-    type: BusinessEvents,
+    type: EventTypes,
     public data: unknown,
   ) {
     super(buildSocketEventType(type))
   }
 
   static on(
-    type: BusinessEvents,
+    type: EventTypes,
 
     cb: (data: unknown) => void,
   ) {
@@ -26,7 +26,7 @@ export class WsEvent extends Event {
     }
   }
 
-  static emit(type: BusinessEvents, data: unknown) {
+  static emit(type: EventTypes, data: unknown) {
     document.dispatchEvent(new WsEvent(type, data))
   }
 }

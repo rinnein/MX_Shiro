@@ -6,9 +6,6 @@ export const PostCombinedSwitch = () => {
   const [copyright, setCopyright] = usePostModelSingleFieldAtom('copyright')
   const [pin, setPin] = usePostModelSingleFieldAtom('pin')
 
-  const [allowComment, setAllowComment] =
-    usePostModelSingleFieldAtom('allowComment')
-
   return (
     <>
       <LabelSwitch
@@ -24,10 +21,6 @@ export const PostCombinedSwitch = () => {
         }}
       >
         <span>置顶</span>
-      </LabelSwitch>
-
-      <LabelSwitch checked={allowComment} onCheckedChange={setAllowComment}>
-        <span>允许评论</span>
       </LabelSwitch>
     </>
   )

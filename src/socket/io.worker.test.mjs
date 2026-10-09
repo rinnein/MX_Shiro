@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import vm from 'node:vm'
 
+import * as webhook from '@mx-space/webhook'
 import ts from 'typescript'
 
 const transpile = (path) =>
@@ -12,7 +13,7 @@ const transpile = (path) =>
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText
-const events = { exports: {} }
+const events = { exports: {}, require: () => webhook }
 vm.runInNewContext(transpile('../types/events.ts'), events)
 
 const setup = () => {
@@ -99,6 +100,31 @@ test('forwards business messages in the existing Shiro event format', () => {
   emit('comment.create', { id: '123', ref_id: '456' })
   assert.deepEqual(structuredClone(messages.at(-1)), {
     type: 'message',
-    payload: { type: 'COMMENT_CREATE', data: { id: '123', ref_id: '456' } },
+    payload: { type: 'comment.create', data: { id: '123', ref_id: '456' } },
   })
+})
+
+test('visibility, comment updates and custom functions keep exact v14 names', () => {
+  const { port, emit, messages } = setup()
+  port()({
+    type: 'config',
+    payload: { url: 'wss://example.com/ws/web', socket_session_id: 'visitor' },
+  })
+  for (const event of [
+    'post.unpublish',
+    'post.republish',
+    'note.unpublish',
+    'note.republish',
+    'comment.update',
+    'page.delete',
+    'fn.shiro#update',
+  ]) {
+    emit(event, { id: '190106791734427656' })
+    assert.equal(messages.at(-1).payload.type, event)
+  }
+})
+
+test('browser event constants match every event exported by webhook 1.0.0', () => {
+  for (const [name, value] of Object.entries(webhook.BusinessEvents))
+    assert.equal(events.exports.EventTypes[name], value)
 })

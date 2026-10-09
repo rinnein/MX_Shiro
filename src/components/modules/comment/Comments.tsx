@@ -1,7 +1,6 @@
 'use client'
 
 import type { ReaderModel } from '@mx-space/api-client'
-import { BusinessEvents } from '@mx-space/webhook'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { FC } from 'react'
 import { memo, useEffect, useMemo } from 'react'
@@ -13,6 +12,7 @@ import { filterDeletedComments } from '~/lib/comment-visibility'
 import { apiClient } from '~/lib/request'
 import { buildCommentsQueryKey } from '~/queries/keys'
 import { WsEvent } from '~/socket/util'
+import { EventTypes } from '~/types/events'
 
 import { LoadMoreIndicator } from '../shared/LoadMoreIndicator'
 import { Comment } from './Comment'
@@ -33,7 +33,7 @@ const useNewCommentObserver = (refId: string) => {
     }
     document.addEventListener('visibilitychange', onVisibilityChange)
 
-    const cleaner = WsEvent.on(BusinessEvents.COMMENT_CREATE, (data: any) => {
+    const cleaner = WsEvent.on(EventTypes.COMMENT_CREATE, (data: any) => {
       if (
         data.ref === refId && // 如果标签页在后台
         document.visibilityState === 'hidden'

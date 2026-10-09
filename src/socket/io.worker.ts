@@ -46,14 +46,11 @@ function setupIo(nextConfig: NonNullable<typeof config>) {
   })
   for (const event of [
     ...Object.values(EventTypes),
-    'fn#media-update',
-    'fn#ps-update',
-    'fn#shiro#update',
+    'fn.media-update',
+    'fn.ps-update',
+    'fn.shiro#update',
   ]) {
-    const wireEvent = event.startsWith('fn#')
-      ? event.replace('fn#', 'fn.')
-      : event.toLowerCase().replace('_', '.')
-    ws.on(wireEvent, (data) =>
+    ws.on(event, (data) =>
       broadcast({ type: 'message', payload: { type: event, data } }),
     )
   }

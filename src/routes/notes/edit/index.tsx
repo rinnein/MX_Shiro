@@ -4,7 +4,7 @@ import { produce } from 'immer'
 import { atom, useStore } from 'jotai'
 import { useRouter, useSearchParams } from 'next/navigation'
 import type { FC } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useIsMobile } from '~/atoms/hooks/viewport'
 import { PageLoading } from '~/components/layout/dashboard/PageLoading'
@@ -169,6 +169,7 @@ const ActionButtonGroup = ({ initialData }: { initialData?: NoteDto }) => {
   const { mutateAsync: updateNote, isPending: p2 } = useUpdateNote()
 
   const isPending = p1 || p2
+  const publishInFlight = useRef(false)
   const router = useRouter()
 
   return (
@@ -188,6 +189,8 @@ const ActionButtonGroup = ({ initialData }: { initialData?: NoteDto }) => {
         <StyledButton
           isLoading={isPending}
           onClick={() => {
+            if (publishInFlight.current) return
+            publishInFlight.current = true
             const currentData = {
               ...getData(),
             }
@@ -210,13 +213,20 @@ const ActionButtonGroup = ({ initialData }: { initialData?: NoteDto }) => {
             const isCreate = !currentData.id
             const promise = isCreate
               ? createNote(payload).then((res) => {
-                  router.replace(`/dashboard/notes/edit?id=${res.id}`)
+                  if (res.id)
+                    router.replace(`/dashboard/notes/edit?id=${res.id}`)
 
                   return res
                 })
               : updateNote(payload)
             promise
               .then((res) => {
+                if (!res.published) return
+                setData((previous) => ({
+                  ...previous,
+                  id: res.id,
+                  publicationBase: res.publicationBase,
+                }))
                 globalThis.dispatchEvent(
                   new PublishEvent({
                     ...payload,
@@ -227,9 +237,12 @@ const ActionButtonGroup = ({ initialData }: { initialData?: NoteDto }) => {
               .catch((err) => {
                 toast.error(err.message)
               })
+              .finally(() => {
+                publishInFlight.current = false
+              })
           }}
         >
-          {initialData ? '保存' : '发布'}
+          {getData().hide ? '保存草稿' : initialData ? '保存并发布' : '发布'}
         </StyledButton>
       </div>
     </>

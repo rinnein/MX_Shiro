@@ -6,6 +6,7 @@ export const authClient = createAuthClient({
   baseURL: `${API_URL}/auth`,
   fetchOptions: {
     credentials: 'include',
+    retry: 0,
   },
 })
 

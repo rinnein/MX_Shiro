@@ -18,6 +18,7 @@ import { createCoreFetchAdapter } from '../../../../packages/fetch/src/core-comp
 
 const apiClient = createClient(createCoreFetchAdapter($fetch))(API_URL, {
   getDataFromResponse: (response) => response as any,
+  transformResponse: (body) => body,
   controllers: [
     PostController,
     NoteController,

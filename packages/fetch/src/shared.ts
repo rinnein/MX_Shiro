@@ -12,6 +12,7 @@ export const createApiClient = (
 ) =>
   createClient(fetchAdapter)(API_URL, {
     controllers: allControllers,
+    transformResponse: (body) => body,
     getDataFromResponse(response) {
       return response as any
     },

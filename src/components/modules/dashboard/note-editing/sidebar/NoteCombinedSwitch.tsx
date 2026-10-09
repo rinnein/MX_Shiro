@@ -8,13 +8,13 @@ import { useNoteModelSingleFieldAtom } from '../data-provider'
 export const NoteCombinedSwitch = () => {
   const [isHide, setIsHide] = useNoteModelSingleFieldAtom('hide')
 
-  const [allowComment, setAllowComment] =
-    useNoteModelSingleFieldAtom('allowComment')
-
   const [bookmark, setHasMemory] = useNoteModelSingleFieldAtom('bookmark')
   const [password, setPassword] = useNoteModelSingleFieldAtom('password')
 
-  const [passwordEnable, setPasswordEnable] = useState(!!password)
+  const [hasPassword] = useNoteModelSingleFieldAtom('hasPassword')
+  const [passwordEnable, setPasswordEnable] = useState(
+    !!password || hasPassword,
+  )
 
   return (
     <>
@@ -23,7 +23,7 @@ export const NoteCombinedSwitch = () => {
         checked={isHide}
         onCheckedChange={setIsHide}
       >
-        <span>隐藏</span>
+        <span>仅保存草稿（不更新线上内容）</span>
       </LabelSwitch>
 
       <LabelSwitch
@@ -31,7 +31,7 @@ export const NoteCombinedSwitch = () => {
         checked={passwordEnable}
         onCheckedChange={(checked) => {
           setPasswordEnable(checked)
-          if (!checked) setPassword('')
+          if (!checked) setPassword(null)
         }}
       >
         <span>设定密码？</span>
@@ -44,18 +44,10 @@ export const NoteCombinedSwitch = () => {
           label="密码"
           type="password"
           inputClassName="text-base font-medium"
-          value={password}
+          value={password || ''}
           onChange={(e) => setPassword(e.target.value)}
         />
       )}
-
-      <LabelSwitch
-        className="shrink-0"
-        checked={allowComment}
-        onCheckedChange={setAllowComment}
-      >
-        <span>允许评论</span>
-      </LabelSwitch>
 
       <LabelSwitch
         className="shrink-0"

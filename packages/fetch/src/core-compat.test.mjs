@@ -251,3 +251,30 @@ test('does not rewrite content slugs that happen to be named user or master', ()
     `${base}/posts/user/master`,
   )
 })
+
+test('retains v3 metadata and identity-keyed enrichments without renaming URLs', () => {
+  const url = 'https://example.com/a-b_c'
+  const result = normalizeCoreResponse(`${base}/posts/${id}`, {
+    data: { ...wirePost, meta: { custom_key: { nested_key: true } } },
+    meta: {
+      enrichments: { [url]: { title: 'External page' } },
+      translation: {
+        [id]: {
+          article: {
+            is_translated: true,
+            source_lang: 'zh',
+            target_lang: 'en',
+          },
+        },
+      },
+      related: [{ id: '190106791734427657', title: 'Related' }],
+      paywall: { locked: true, preview_blocks: 2 },
+    },
+  })
+  assert.equal(result.enrichments[url].title, 'External page')
+  assert.equal(result.isTranslated, true)
+  assert.equal(result.sourceLang, 'zh')
+  assert.equal(result.related[0].title, 'Related')
+  assert.equal(result.responseMeta.paywall.previewBlocks, 2)
+  assert.deepEqual(result.meta, { custom_key: { nested_key: true } })
+})

@@ -11,8 +11,15 @@ import { useModalStack } from '~/components/ui/modal'
 import { useIsClient } from '~/hooks/common/use-is-client'
 import type { AuthSocialProviders } from '~/lib/authjs'
 import { authClient } from '~/lib/authjs'
+import { createSocialSignIn, getSocialSignInOptions } from '~/lib/oauth-login'
 import { apiClient } from '~/lib/request'
+import { toast } from '~/lib/toast'
 import { useAggregationSelector } from '~/providers/root/aggregation-data-provider'
+
+const signIn = createSocialSignIn(
+  (options: ReturnType<typeof getSocialSignInOptions<AuthSocialProviders>>) =>
+    authClient.signIn.social(options),
+)
 
 export const useAuthProviders = () => {
   const { data } = useQuery({
@@ -63,18 +70,24 @@ export const AuthProvidersRender: FC = () => {
           {providers.map((provider) => (
             <li key={provider}>
               <MotionButtonBase
-                disabled={authProcessingLockSet.has(provider)}
-                onClick={() => {
-                  if (authProcessingLockSet.has(provider)) return
-                  authClient.signIn.social({
-                    provider,
-                    callbackURL: window.location.href,
-                  })
-
-                  setAuthProcessingLockSet((prev) => {
-                    prev.add(provider)
-                    return new Set(prev)
-                  })
+                type="button"
+                aria-label={`使用 ${provider} 登录`}
+                disabled={authProcessingLockSet.size > 0}
+                onClick={async () => {
+                  if (authProcessingLockSet.size > 0) return
+                  setAuthProcessingLockSet(new Set([provider]))
+                  try {
+                    await signIn(
+                      getSocialSignInOptions(provider, window.location.href),
+                    )
+                  } catch (error) {
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : '暂时无法登录，请稍后重试',
+                    )
+                    setAuthProcessingLockSet(new Set())
+                  }
                 }}
               >
                 <div className="flex size-10 items-center justify-center rounded-full border bg-base-100 dark:border-neutral-700">

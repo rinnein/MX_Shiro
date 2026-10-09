@@ -1,13 +1,14 @@
 import type { PaginateResult, PostModel, TagModel } from '@mx-space/api-client'
-import { useMutation } from '@tanstack/react-query'
 
-import { useResetAutoSaverData } from '~/components/modules/dashboard/writing/BaseWritingProvider'
-import { cloneDeep } from '~/lib/lodash'
-import { apiClient } from '~/lib/request'
-import { toast } from '~/lib/toast'
+import {
+  editorFromPublication,
+  getPublicationBase,
+} from '~/lib/content-publish'
+import { apiClient, coreClient } from '~/lib/request'
 import type { PostDto } from '~/models/writing'
 
 import { defineQuery } from '../helper'
+import { usePublishArticle } from '../hooks/publication'
 
 export const post = {
   bySlug: (category: string, slug: string) =>
@@ -51,10 +52,14 @@ export const postAdmin = {
       queryFn: async () => {
         const data = await apiClient.post.getPost(id)
 
-        const dto = {
-          ...data.$serialized,
-          relatedId: data.related?.map((i) => i.id) || [],
-        } as PostDto
+        const base = await getPublicationBase(coreClient, 'post', id)
+        const dto = editorFromPublication(
+          {
+            ...data.$serialized,
+            relatedId: data.related?.map((i) => i.id) || [],
+          } as PostDto,
+          base,
+        )
 
         return dto
       },
@@ -97,63 +102,5 @@ export const postAdmin = {
     }),
 }
 
-export const useCreatePost = () => {
-  const resetAutoSaver = useResetAutoSaverData()
-  return useMutation({
-    mutationFn: (data: PostDto) => {
-      const readonlyKeys = [
-        'id',
-        'related',
-        'modified',
-        'category',
-      ] as (keyof PostModel)[]
-      const nextData = cloneDeep(data) as any
-      for (const key of readonlyKeys) {
-        delete nextData[key]
-      }
-      return apiClient.post.proxy.post<{
-        id: string
-      }>({
-        data: nextData,
-      })
-    },
-    onSuccess: () => {
-      toast.success('创建成功')
-      resetAutoSaver('post')
-    },
-  })
-}
-
-export const useUpdatePost = () => {
-  const resetAutoSaver = useResetAutoSaverData()
-  return useMutation({
-    mutationFn: (data: PostDto) => {
-      if (
-        (data as typeof data & { contentFormat?: string }).contentFormat ===
-        'lexical'
-      ) {
-        throw new Error('请在 Core 控制台编辑这篇富文本内容')
-      }
-      const { id } = data
-      const readonlyKeys = [
-        'id',
-        'related',
-        'modified',
-        'category',
-      ] as (keyof PostModel)[]
-      const nextData = cloneDeep(data) as any
-      for (const key of readonlyKeys) {
-        delete nextData[key]
-      }
-      return apiClient.post.proxy(id).put<{
-        id: string
-      }>({
-        data: nextData,
-      })
-    },
-    onSuccess: ({ id }) => {
-      toast.success('更新成功')
-      resetAutoSaver('post', id)
-    },
-  })
-}
+export const useCreatePost = () => usePublishArticle('post')
+export const useUpdatePost = () => usePublishArticle('post')

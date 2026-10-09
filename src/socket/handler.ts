@@ -6,7 +6,6 @@ import type {
   RecentlyModel,
   SayModel,
 } from '@mx-space/api-client'
-import type { BusinessEvents } from '@mx-space/webhook'
 import type { InfiniteData } from '@tanstack/react-query'
 import { produce } from 'immer'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
@@ -67,8 +66,17 @@ export const eventHandler = (
   router: AppRouterInstance,
 ) => {
   switch (type) {
+    case EventTypes.AGGREGATE_UPDATE:
+    case EventTypes.CATEGORY_CREATE:
+    case EventTypes.CATEGORY_UPDATE:
+    case EventTypes.CATEGORY_DELETE:
+    case EventTypes.TOPIC_CREATE:
+    case EventTypes.TOPIC_UPDATE:
+    case EventTypes.TOPIC_DELETE:
     case EventTypes.CONTENT_REFRESH: {
       refreshContentQueries()
+      queryClient.invalidateQueries({ queryKey: ['aggregation'] })
+      queryClient.invalidateQueries({ queryKey: ['header-categories'] })
       router?.refresh()
       break
     }
@@ -107,6 +115,7 @@ export const eventHandler = (
       break
     }
 
+    case EventTypes.POST_UNPUBLISH:
     case EventTypes.POST_DELETE: {
       refreshContentQueries()
       const id = typeof data === 'string' ? data : data.id
@@ -143,6 +152,7 @@ export const eventHandler = (
       break
     }
 
+    case EventTypes.NOTE_UNPUBLISH:
     case EventTypes.NOTE_DELETE: {
       refreshContentQueries()
       const id = typeof data === 'string' ? data : data.id
@@ -155,7 +165,29 @@ export const eventHandler = (
       break
     }
 
-    case EventTypes.PAGE_UPDATED:
+    case EventTypes.PAGE_DELETE: {
+      const id = typeof data === 'string' ? data : data?.id
+      if (getCurrentPageData()?.id === id)
+        router.replace(routeBuilder(Routes.PageDeletd, {}))
+      refreshContentQueries()
+      router?.refresh()
+      break
+    }
+
+    case EventTypes.RECENTLY_UPDATE:
+    case EventTypes.RECENTLY_DELETE: {
+      queryClient.invalidateQueries({ queryKey: ['home-activity-recent'] })
+      queryClient.invalidateQueries({ queryKey: ['recent'] })
+      router?.refresh()
+      break
+    }
+
+    case EventTypes.SAY_UPDATE:
+    case EventTypes.SAY_DELETE: {
+      queryClient.invalidateQueries({ queryKey: sayQueryKey })
+      break
+    }
+
     case EventTypes.PAGE_UPDATE: {
       const { slug } = data
       if (getCurrentPageData()?.slug === slug) {
@@ -168,6 +200,7 @@ export const eventHandler = (
       break
     }
 
+    case EventTypes.NOTE_REPUBLISH:
     case EventTypes.NOTE_CREATE: {
       refreshContentQueries()
       const { title, nid } = data as NoteModel
@@ -184,6 +217,7 @@ export const eventHandler = (
       break
     }
 
+    case EventTypes.POST_REPUBLISH:
     case EventTypes.POST_CREATE: {
       refreshContentQueries()
       const { title, category, slug } = data as PostModel
@@ -246,6 +280,7 @@ export const eventHandler = (
       break
     }
 
+    case EventTypes.COMMENT_UPDATE:
     case EventTypes.COMMENT_CREATE: {
       const payload = data as {
         ref: string
@@ -259,7 +294,10 @@ export const eventHandler = (
 
         if (!queryData) return
         for (const page of queryData.pages) {
-          if (page.data.some((comment) => comment.id === payload.id)) {
+          if (
+            type === EventTypes.COMMENT_CREATE &&
+            page.data.some((comment) => comment.id === payload.id)
+          ) {
             return
           }
         }
@@ -274,7 +312,7 @@ export const eventHandler = (
 
     case EventTypes.ARTICLE_READ_COUNT_UPDATE: {
       const { id, count, type } = data
-      if (!count) {
+      if (typeof count !== 'number') {
         break
       }
 
@@ -301,19 +339,19 @@ export const eventHandler = (
       break
     }
 
-    case 'fn#media-update': {
+    case 'fn.media-update': {
       setActivityMediaInfo(data)
       break
     }
 
-    case 'fn#ps-update': {
+    case 'fn.ps-update': {
       const process = data.processInfo as ProcessInfo
 
       setActivityProcessInfo(process)
       break
     }
 
-    case 'fn#shiro#update': {
+    case 'fn.shiro#update': {
       toast.info('网站已更新，请刷新页面', {
         onClick: () => {
           location.reload()
@@ -330,7 +368,7 @@ export const eventHandler = (
       }
     }
   }
-  WsEvent.emit(type as BusinessEvents, data)
+  WsEvent.emit(type as EventTypes, data)
 }
 
 interface ProcessInfo {

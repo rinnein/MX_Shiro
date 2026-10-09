@@ -25,6 +25,8 @@ export const PostRelated: FC<{
       </h3>
       <ul className="ml-0 mt-4 list-inside list-disc pl-0 text-base leading-relaxed">
         {related.map((post) => {
+          if (!post.category?.slug || !post.slug)
+            return <li key={post.id}>{post.title}</li>
           const href = `/posts/${post.category.slug}/${post.slug}`
           return (
             <li key={href}>

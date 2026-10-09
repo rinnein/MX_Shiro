@@ -2,8 +2,11 @@ import 'client-only'
 
 import { createFetch } from 'ofetch'
 
+import { API_URL } from '~/constants/env'
+
 import PKG from '../../../package.json'
 import { createApiClient, createFetchAdapter, getToken } from './shared'
+import { createV3Client } from './v3'
 
 const isDev = process.env.NODE_ENV === 'development'
 const isServerSide = typeof window === 'undefined'
@@ -58,6 +61,7 @@ export const $fetch = createFetch({
 })
 
 export const apiClient = createApiClient(createFetchAdapter($fetch))
+export const coreClient = createV3Client($fetch, API_URL)
 export const attachFetchHeader = (key: string, value: string | null) => {
   const original = globalConfigureHeader[key]
   if (value === null) {

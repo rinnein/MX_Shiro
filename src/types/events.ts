@@ -1,41 +1,69 @@
 import type { NoteModel } from '@mx-space/api-client'
 
-export enum EventTypes {
-  GATEWAY_CONNECT = 'GATEWAY_CONNECT',
-  GATEWAY_DISCONNECT = 'GATEWAY_DISCONNECT',
-
-  VISITOR_ONLINE = 'VISITOR_ONLINE',
-  VISITOR_OFFLINE = 'VISITOR_OFFLINE',
-
-  AUTH_FAILED = 'AUTH_FAILED',
-  CONTENT_REFRESH = 'CONTENT_REFRESH',
-
-  COMMENT_CREATE = 'COMMENT_CREATE',
-  COMMENT_DELETE = 'COMMENT_DELETE',
-
-  POST_CREATE = 'POST_CREATE',
-  POST_UPDATE = 'POST_UPDATE',
-  POST_DELETE = 'POST_DELETE',
-
-  NOTE_CREATE = 'NOTE_CREATE',
-  NOTE_UPDATE = 'NOTE_UPDATE',
-  NOTE_DELETE = 'NOTE_DELETE',
-
-  // NOTE 历史遗留
-  PAGE_UPDATED = 'PAGE_UPDATED',
-  PAGE_UPDATE = 'PAGE_UPDATE',
-
-  SAY_CREATE = 'SAY_CREATE',
-  SAY_DELETE = 'SAY_DELETE',
-  SAY_UPDATE = 'SAY_UPDATE',
-
-  RECENTLY_CREATE = 'RECENTLY_CREATE',
-  RECENTLY_DELETE = 'RECENTLY_DELETE',
-
-  ACTIVITY_UPDATE_PRESENCE = 'ACTIVITY_UPDATE_PRESENCE',
-  ACTIVITY_LEAVE_PRESENCE = 'ACTIVITY_LEAVE_PRESENCE',
-  ARTICLE_READ_COUNT_UPDATE = 'ARTICLE_READ_COUNT_UPDATE',
-}
+// Mirrored from @mx-space/webhook 1.0.0 plus Core v14 visibility events.
+// Keep the browser bundle free of the package's Node-only signature helpers.
+// io.worker.test.mjs verifies every published constant against the package.
+export const EventTypes = {
+  GATEWAY_CONNECT: 'gateway.connect',
+  GATEWAY_DISCONNECT: 'gateway.disconnect',
+  VISITOR_ONLINE: 'visitor.online',
+  VISITOR_OFFLINE: 'visitor.offline',
+  AUTH_FAILED: 'auth.failed',
+  COMMENT_CREATE: 'comment.create',
+  COMMENT_DELETE: 'comment.delete',
+  COMMENT_UPDATE: 'comment.update',
+  POST_CREATE: 'post.create',
+  POST_UPDATE: 'post.update',
+  POST_DELETE: 'post.delete',
+  NOTE_CREATE: 'note.create',
+  NOTE_UPDATE: 'note.update',
+  NOTE_DELETE: 'note.delete',
+  PAGE_CREATE: 'page.create',
+  PAGE_UPDATE: 'page.update',
+  PAGE_DELETE: 'page.delete',
+  TOPIC_CREATE: 'topic.create',
+  TOPIC_UPDATE: 'topic.update',
+  TOPIC_DELETE: 'topic.delete',
+  CATEGORY_CREATE: 'category.create',
+  CATEGORY_UPDATE: 'category.update',
+  CATEGORY_DELETE: 'category.delete',
+  SAY_CREATE: 'say.create',
+  SAY_DELETE: 'say.delete',
+  SAY_UPDATE: 'say.update',
+  LINK_APPLY: 'link.apply',
+  RECENTLY_CREATE: 'recently.create',
+  RECENTLY_UPDATE: 'recently.update',
+  RECENTLY_DELETE: 'recently.delete',
+  AGGREGATE_UPDATE: 'aggregate.update',
+  TRANSLATION_CREATE: 'translation.create',
+  TRANSLATION_UPDATE: 'translation.update',
+  TRANSLATION_DELETE: 'translation.delete',
+  INSIGHTS_CREATE: 'insights.create',
+  INSIGHTS_UPDATE: 'insights.update',
+  INSIGHTS_DELETE: 'insights.delete',
+  INSIGHTS_GENERATED: 'insights.generated',
+  SUMMARY_GENERATED: 'summary.generated',
+  CONTENT_REFRESH: 'content.refresh',
+  IMAGE_REFRESH: 'image.refresh',
+  IMAGE_FETCH: 'image.fetch',
+  ADMIN_NOTIFICATION: 'admin.notification',
+  ACTIVITY_LIKE: 'activity.like',
+  ACTIVITY_UPDATE_PRESENCE: 'activity.update_presence',
+  ACTIVITY_LEAVE_PRESENCE: 'activity.leave_presence',
+  ARTICLE_READ_COUNT_UPDATE: 'article.read_count_update',
+  AI_AGENT_MESSAGE: 'ai_agent.message',
+  AI_AGENT_TOOL_EVENT: 'ai_agent.tool_event',
+  AI_AGENT_CONFIRM_REQUEST: 'ai_agent.confirm_request',
+  AI_AGENT_CONFIRM_RESULT: 'ai_agent.confirm_result',
+  AI_AGENT_SESSION_STATE: 'ai_agent.session_state',
+  COMPANION_PRESENCE_CHANGED: 'companion_presence.changed',
+  TASK_UPDATE: 'task.update',
+  POST_UNPUBLISH: 'post.unpublish',
+  POST_REPUBLISH: 'post.republish',
+  NOTE_UNPUBLISH: 'note.unpublish',
+  NOTE_REPUBLISH: 'note.republish',
+} as const
+export type EventTypes = (typeof EventTypes)[keyof typeof EventTypes]
 
 export interface EventTypesPayload {
   [EventTypes.VISITOR_ONLINE]: { online: number }

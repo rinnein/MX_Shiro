@@ -13,7 +13,7 @@ import { PostMetaBar } from './PostMetaBar'
 export const PostItem = memo<{ data: PostModel }>(function PostItem({ data }) {
   const isPinned = !!data.pin
   const previewLength = isPinned ? 650 : 300
-  const plainText = RemoveMarkdown(data.text)
+  const plainText = RemoveMarkdown(data.text || data.summary || '')
   const displayText =
     plainText.length > previewLength
       ? `${plainText.slice(0, previewLength)}...`

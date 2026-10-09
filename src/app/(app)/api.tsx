@@ -25,6 +25,7 @@ export const fetchAggregationData = cache(async () => {
   )(apiClient.proxy.toString(true), {
     controllers: [AggregateController],
     getDataFromResponse: (response) => response as any,
+    transformResponse: (body) => body,
   })
   const fetcher = async () =>
     (await client.aggregate.getAggregateData('shiro'))

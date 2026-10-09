@@ -60,7 +60,7 @@ export const DataStat = () => {
     queryFn: () => fetchSiteWordCount(),
     select(data) {
       if (!data) return
-      return data.data.length
+      return data.count
     },
   })
   const { readAndLikeCounts } = counts || {}
@@ -300,5 +300,5 @@ const fetchReadAndLikeCounts = async () =>
 
 const fetchSiteWordCount = async () =>
   await apiClient.proxy.aggregate.count_site_words.get<{
-    data: { length: number }
+    count: number
   }>()

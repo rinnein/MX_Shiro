@@ -5,8 +5,10 @@ import { cookies, headers as nextHeaders } from 'next/headers'
 import { createFetch } from 'ofetch'
 
 import PKG from '~/../package.json'
+import { API_URL } from '~/constants/env'
 
 import { createApiClient, createFetchAdapter, TokenKey } from './shared'
+import { createV3Client } from './v3'
 
 const isDev = process.env.NODE_ENV === 'development'
 export const $fetch = createFetch({
@@ -78,6 +80,7 @@ export const $fetch = createFetch({
   },
 })
 export const apiClient = createApiClient(createFetchAdapter($fetch))
+export const coreClient = createV3Client($fetch, API_URL)
 
 const Noop = () => null
 export const attachFetchHeader = () => Noop

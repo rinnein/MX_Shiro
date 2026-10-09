@@ -1,17 +1,17 @@
 import type {
-  NoteModel,
   NoteWrappedPayload,
   NoteWrappedWithLikedPayload,
 } from '@mx-space/api-client'
-import { useMutation } from '@tanstack/react-query'
 
-import { useResetAutoSaverData } from '~/components/modules/dashboard/writing/BaseWritingProvider'
-import { cloneDeep } from '~/lib/lodash'
-import { apiClient } from '~/lib/request'
-import { toast } from '~/lib/toast'
+import {
+  editorFromPublication,
+  getPublicationBase,
+} from '~/lib/content-publish'
+import { apiClient, coreClient } from '~/lib/request'
 import type { NoteDto } from '~/models/writing'
 
 import { defineQuery } from '../helper'
+import { usePublishArticle } from '../hooks/publication'
 
 const LATEST_KEY = 'latest'
 export const note = {
@@ -67,70 +67,13 @@ export const noteAdmin = {
       queryFn: async () => {
         const data = await apiClient.note.getNoteById(id)
 
-        const dto = data.$serialized as NoteDto
+        const base = await getPublicationBase(coreClient, 'note', id)
+        const dto = editorFromPublication(data.$serialized as NoteDto, base)
 
         return dto
       },
     }),
 }
 
-export const useCreateNote = () => {
-  const resetAutoSaver = useResetAutoSaverData()
-  return useMutation({
-    mutationFn: (data: NoteDto) => {
-      const readonlyKeys = [
-        'id',
-        'nid',
-        'modified',
-        'topic',
-      ] as (keyof NoteModel)[]
-      const nextData = cloneDeep(data) as any
-      for (const key of readonlyKeys) {
-        delete nextData[key]
-      }
-      return apiClient.note.proxy.post<{
-        id: string
-      }>({
-        data: nextData,
-      })
-    },
-    onSuccess: () => {
-      toast.success('创建成功')
-      resetAutoSaver('note')
-    },
-  })
-}
-
-export const useUpdateNote = () => {
-  const resetAutoSaver = useResetAutoSaverData()
-  return useMutation({
-    mutationFn: (data: NoteDto) => {
-      if (
-        (data as typeof data & { contentFormat?: string }).contentFormat ===
-        'lexical'
-      ) {
-        throw new Error('请在 Core 控制台编辑这篇富文本内容')
-      }
-      const { id } = data
-      const readonlyKeys = [
-        'id',
-        'nid',
-        'modified',
-        'topic',
-      ] as (keyof NoteModel)[]
-      const nextData = cloneDeep(data) as any
-      for (const key of readonlyKeys) {
-        delete nextData[key]
-      }
-      return apiClient.note.proxy(id).put<{
-        id: string
-      }>({
-        data: nextData,
-      })
-    },
-    onSuccess: ({ id }) => {
-      toast.success('更新成功')
-      resetAutoSaver('note', id)
-    },
-  })
-}
+export const useCreateNote = () => usePublishArticle('note')
+export const useUpdateNote = () => usePublishArticle('note')

@@ -9,13 +9,13 @@ const PAGE_SIZE = 50
 const countCharacters = (text: string) =>
   Array.from(removeMarkdown(text).replaceAll(/\s/g, '')).length
 
-type Publication = { text: string }
-type PublicationCounts = { count: number; characters: number }
+type Publication = { text?: string }
+type PublicationCounts = { count: number; characters: number | null }
 
 async function countPublications(
   getPage: (page: number) => PromiseLike<{
     data: Publication[]
-    pagination: { hasNextPage: boolean }
+    pagination: { hasNextPage: boolean; total?: number }
   }>,
 ): Promise<PublicationCounts> {
   let count = 0
@@ -26,7 +26,10 @@ async function countPublications(
     const result = await getPage(page)
     for (const item of result.data) {
       if (typeof item.text !== 'string') {
-        throw new TypeError('Publication list did not include full text')
+        return {
+          count: result.pagination.total ?? result.data.length,
+          characters: null,
+        }
       }
       count += 1
       characters += countCharacters(item.text)

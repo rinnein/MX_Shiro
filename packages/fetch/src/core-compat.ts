@@ -61,7 +61,9 @@ export const normalizeCoreResponse = (
   method = 'GET',
 ): any => {
   const path = getCorePath(url)
-  const body = simpleCamelcaseKeys(response) as any
+  const body = simpleCamelcaseKeys(response, {
+    shouldSkipKey: (key) => /^https?:\/\//.test(key),
+  }) as any
   // Better Auth endpoints deliberately return their own raw protocol.
   if (!isObject(body) || !('data' in body)) return normalizeCoreModel(body)
 
@@ -95,6 +97,17 @@ export const normalizeCoreResponse = (
         },
       )
   const result = normalizeCoreModel(adapted)
+  if (isObject(result) && body.meta) result.responseMeta = body.meta
+  // Detail controllers explicitly bypass case conversion for user metadata.
+  if (
+    /^\/posts\/[^/]+(?:\/[^/]+)?$/.test(path) &&
+    isObject(response) &&
+    isObject(response.data) &&
+    response.data.id &&
+    'meta' in response.data &&
+    isObject(result)
+  )
+    result.meta = response.data.meta
   if (/^\/comments\/ref\//.test(path)) {
     result.readers = { ...result.readers, ...readers }
   }

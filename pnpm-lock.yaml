@@ -38,6 +38,9 @@ importers:
       '@mx-space/api-client-v3':
         specifier: npm:@mx-space/api-client@5.13.0
         version: '@mx-space/api-client@5.13.0'
+      '@mx-space/webhook':
+        specifier: 1.0.0
+        version: 1.0.0
       '@mx-space/ws-client':
         specifier: 0.1.0
         version: 0.1.0
@@ -303,9 +306,6 @@ importers:
       '@innei/prettier':
         specifier: 0.15.0
         version: 0.15.0
-      '@mx-space/webhook':
-        specifier: 0.5.0
-        version: 0.5.0
       '@next/bundle-analyzer':
         specifier: 15.3.4
         version: 15.3.4(bufferutil@4.0.9)
@@ -1241,8 +1241,9 @@ packages:
     resolution: {integrity: sha512-bjFLQyocEqgXXS2iRrIbG78GfV1BNWbCz1jn+LyD7iZBQmUpuW0mTxIyTkQZwltBii3Ylv2AvReahtNcQ9RzfQ==}
     engines: {node: '>=22'}
 
-  '@mx-space/webhook@0.5.0':
-    resolution: {integrity: sha512-mgDaMHZlD/8kyOY34K7D9q1ifsHNVjqLxNZdpJi6O90uoQlb6f5/aMU5jj52QK0Ua8pzaemtFT+tC4qnEKrE4A==}
+  '@mx-space/webhook@1.0.0':
+    resolution: {integrity: sha512-PnPS7qapGtuyhXTvuxbOSQJHSQ+PZ/YLGwVU/C9lbCi1U8C6s6Gvh1faiu0pE6qvV0L6S3CUWclHP22lXG5p1w==}
+    engines: {node: '>=22'}
 
   '@mx-space/ws-client@0.1.0':
     resolution: {integrity: sha512-LPxt26kEAKxZxtTJTpe/0v0ovB1iyBxa8VNpg0dwNScqy4n1tNgmI7Ah2L8A1/FcLlX9++N2VZIl6qfaw/jctA==}
@@ -4532,6 +4533,9 @@ packages:
     resolution: {integrity: sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==}
     hasBin: true
 
+  optimist@0.3.7:
+    resolution: {integrity: sha512-TCx0dXQzVtSCg2OgY/bO9hjM9cV4XYx09TVK+s3+FhkjT6LovsLe+pPMzpWf+6yXK/hUizs2gUoTw3jHM0VaTQ==}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -5155,6 +5159,11 @@ packages:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
 
+  rebuild@0.1.2:
+    resolution: {integrity: sha512-EtDZ5IapND57htCrOOcfH7MzXCQKivzSZUIZIuc8H0xDHfmi9HDBZIyjT7Neh5GcUoxQ6hfsXluC+UrYLgGbZg==}
+    engines: {node: '>=0.8.8'}
+    hasBin: true
+
   refa@0.12.1:
     resolution: {integrity: sha512-J8rn6v4DBb2nnFqkqwy6/NnTYMcgLA+sLr0iIO41qpv0n+ngb7ksag2tMRl0inb1bbO/esUwzW1vbJi7K0sI0g==}
     engines: {node: ^12.0.0 || ^14.0.0 || >=16.0.0}
@@ -5731,6 +5740,10 @@ packages:
   word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
+
+  wordwrap@0.0.3:
+    resolution: {integrity: sha512-1tMA907+V4QmxV7dbRvb4/8MaRALK6q9Abid3ndMYnbyo8piisCmeONVqVSXqQA3KaP4SLt5b7ud6E2sqP8TFw==}
+    engines: {node: '>=0.4.0'}
 
   wrap-ansi@7.0.0:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
@@ -7120,7 +7133,9 @@ snapshots:
 
   '@mx-space/api-client@5.13.0': {}
 
-  '@mx-space/webhook@0.5.0': {}
+  '@mx-space/webhook@1.0.0':
+    dependencies:
+      rebuild: 0.1.2
 
   '@mx-space/ws-client@0.1.0': {}
 
@@ -10757,6 +10772,10 @@ snapshots:
 
   opener@1.5.2: {}
 
+  optimist@0.3.7:
+    dependencies:
+      wordwrap: 0.0.3
+
   optionator@0.9.4:
     dependencies:
       deep-is: 0.1.4
@@ -11385,6 +11404,10 @@ snapshots:
   readdirp@3.6.0:
     dependencies:
       picomatch: 2.3.1
+
+  rebuild@0.1.2:
+    dependencies:
+      optimist: 0.3.7
 
   refa@0.12.1:
     dependencies:
@@ -12048,6 +12071,8 @@ snapshots:
   wonka@6.3.5: {}
 
   word-wrap@1.2.5: {}
+
+  wordwrap@0.0.3: {}
 
   wrap-ansi@7.0.0:
     dependencies:

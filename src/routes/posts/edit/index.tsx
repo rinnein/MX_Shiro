@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import { produce } from 'immer'
 import { atom, useStore } from 'jotai'
 import type { FC } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useIsMobile } from '~/atoms/hooks/viewport'
@@ -163,6 +163,7 @@ const ActionButtonGroup = ({ initialData }: { initialData?: PostDto }) => {
   const { mutateAsync: createPost, isPending: p1 } = useCreatePost()
   const { mutateAsync: updatePost, isPending: p2 } = useUpdatePost()
   const isPending = p1 || p2
+  const publishInFlight = useRef(false)
 
   const navigate = useNavigate()
   return (
@@ -182,6 +183,8 @@ const ActionButtonGroup = ({ initialData }: { initialData?: PostDto }) => {
         <StyledButton
           isLoading={isPending}
           onClick={() => {
+            if (publishInFlight.current) return
+            publishInFlight.current = true
             const currentData = {
               ...getData(),
             }
@@ -204,24 +207,35 @@ const ActionButtonGroup = ({ initialData }: { initialData?: PostDto }) => {
             const isCreate = !currentData.id
             const promise = isCreate
               ? createPost(payload).then((res) => {
-                  navigate(`/dashboard/posts/edit?id=${res.id}`, {
-                    replace: true,
-                  })
+                  if (res.id)
+                    navigate(`/dashboard/posts/edit?id=${res.id}`, {
+                      replace: true,
+                    })
                   return res
                 })
               : updatePost(payload)
 
-            promise.then((res) => {
-              globalThis.dispatchEvent(
-                new PublishEvent({
-                  ...payload,
+            promise
+              .then((res) => {
+                if (!res.published) return
+                setData((previous) => ({
+                  ...previous,
                   id: res.id,
-                }),
-              )
-            })
-            promise.catch((err) => {
-              toast.error(err.message)
-            })
+                  publicationBase: res.publicationBase,
+                }))
+                globalThis.dispatchEvent(
+                  new PublishEvent({
+                    ...payload,
+                    id: res.id,
+                  }),
+                )
+              })
+              .catch((err) => {
+                toast.error(err.message)
+              })
+              .finally(() => {
+                publishInFlight.current = false
+              })
           }}
         >
           {initialData ? '保存' : '发布'}

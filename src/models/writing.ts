@@ -1,5 +1,7 @@
 import type { PostModel } from '@mx-space/api-client'
 
+import type { PublicationBase } from '~/lib/content-publish'
+
 export interface Count {
   read: number
   like: number
@@ -21,6 +23,8 @@ export class BaseModel {
 export type WriteBaseType = {
   title: string
   text: string
+  contentFormat?: string
+  publicationBase?: PublicationBase
   allowComment: boolean
 
   id: string
@@ -61,7 +65,8 @@ export type NoteDto = {
   hide?: boolean
   mood: string | null
   weather: string | null
-  password: string | null
+  password?: string | null
+  hasPassword?: boolean
   publicAt?: Date | null
   bookmark?: boolean
   music?: NoteMusicRecord[]
